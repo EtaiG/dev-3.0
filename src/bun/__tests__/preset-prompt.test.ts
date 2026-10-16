@@ -253,25 +253,15 @@ describe("COORDINATOR_PROMPT", () => {
 		expect(COORDINATOR_PROMPT).toMatch(/Cursors, page counts and opened notes stay in your reasoning/);
 	});
 
-	// This preamble is prepended to a coordinator task's DESCRIPTION, which travels
-	// on the command line for every agent that does not get a prompt file, so its
-	// length is launch capacity spent (`agent-command-line-budget.ts`) — and it is
-	// already over the 5 000-character reserve, which nothing enforces on input.
-	//
-	// This preamble is prepended to a coordinator task's DESCRIPTION, which travels
-	// on the command line for every agent that does not get a prompt file, so its
-	// length is launch capacity spent (`agent-command-line-budget.ts`) — and it is
-	// already over the 5 000-character reserve, which nothing enforces on input.
-	//
-	// 6 210 is not a round number: it is what this prompt measured BEFORE the events
-	// block was added. Adding the block cost 1 700 characters and the rest of the
-	// prompt was condensed to pay for all of them, so no coordinator task that
-	// launched before stops launching. The cap keeps that property: a new section
-	// is paid for out of existing prose, never out of the user's task description.
-	// The create-and-launch default (2026-09-12) was paid for the same way — folded
-	// into the rules it belongs to, with illustrations and justifications cut.
-	it("costs no more launch capacity than it did before the events block", () => {
-		expect(COORDINATOR_PROMPT.length).toBeLessThanOrEqual(6210);
+	// This preamble is prepended to a coordinator task's DESCRIPTION, and every
+	// agent still carries the task prompt on its command line (only the protocol
+	// body moved to a file), so its length is Windows launch capacity spent
+	// (`agent-command-line-budget.ts`). It is a budget, not an OS limit: the
+	// paired guard in `agent-command-line-budget.test.ts` measures the room it
+	// leaves for the user's own brief. Raised from 6 210 to 6 500 on 2026-10-16 —
+	// see decisions/2026/10/16/raise-coordinator-prompt-budget-to-6500.md.
+	it("stays inside its launch-capacity budget", () => {
+		expect(COORDINATOR_PROMPT.length).toBeLessThanOrEqual(6500);
 	});
 
 	it("never assumes the user's gender — it ships to every install as the default", () => {

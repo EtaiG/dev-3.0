@@ -1,0 +1,1 @@
+Raised the built-in coordinator prompt budget from 6 210 to 6 500 characters, moving the paired Windows launch-room floors with it, so a new coordinator rule no longer has to be paid for by trimming unrelated prose.

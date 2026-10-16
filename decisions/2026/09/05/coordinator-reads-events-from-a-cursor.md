@@ -1,5 +1,7 @@
 # The coordinator reads events from a cursor, at the start of a turn
 
+> Superseded in part on 2026-10-16 by `decisions/2026/10/16/raise-coordinator-prompt-budget-to-6500.md`: the 6 210 cap and the 26 536 / 26 525 floors became 6 500 and 26 200 / 26 190.
+
 ## Context
 
 `dev3 events` shipped (Seq 1738) as a POSITION — a millisecond cursor, a cap that keeps the

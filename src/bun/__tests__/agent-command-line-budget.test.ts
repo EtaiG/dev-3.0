@@ -121,19 +121,17 @@ describe("the whole Windows command line fits", () => {
 	// A preset preamble (`COORDINATOR_PROMPT`) is prepended to the task DESCRIPTION,
 	// so it spends the same line the protocol body does — and nothing enforces the
 	// reserve on input: no validation or truncation exists on `--description`, and
-	// the RPC handler only measures its length for telemetry. Adding the events
-	// block to that preamble therefore had to be paid for by condensing it, and this
-	// is the property that proves it was: on the agents that carry no protocol body
-	// inline, a coordinator task keeps AT LEAST the description room it had before.
+	// the RPC handler only measures its length for telemetry. This is the
+	// property that bounds it: on the agents that carry no protocol body inline, a
+	// coordinator task keeps AT LEAST this much room for the user's own brief.
 	//
-	// 26 536 characters is that measured baseline (gemini; the custom-agent adapter
-	// measured 26 525). Raw prompt length is only a proxy for it, because the launch
-	// dialect escapes quotes and backticks — measure the serialized line instead.
-	//
-	// The create-and-launch default (2026-09-12) was folded into the rules it
-	// belongs to and paid for out of illustrations and justifications, so these two
-	// numbers did not move.
-	it("a coordinator task keeps the launch room it had before the events block", async () => {
+	// The floors are paired with the 6 500-character cap in `preset-prompt.test.ts`:
+	// a prompt padded to exactly 6 500 measured 26 239 (gemini) and 26 228 (custom
+	// agent). They sit ~38 below that because raw length is only a proxy — the
+	// launch dialect escapes quotes and backticks — so a prompt at the cap with a
+	// few more quotes still passes both guards instead of only one.
+	// See decisions/2026/10/16/raise-coordinator-prompt-budget-to-6500.md.
+	it("a coordinator task keeps its budgeted launch room", async () => {
 		asPlatform("win32");
 		const coordinator = (brief: number) => ({
 			...fullSizeContext(),
@@ -141,8 +139,8 @@ describe("the whole Windows command line fits", () => {
 		});
 		const fits = async (command: string, brief: number) =>
 			(await resolveAgentCommand(agent(command), undefined, coordinator(brief))).length < WINDOWS_COMMAND_LINE_LIMIT;
-		expect(await fits("gemini", 26536)).toBe(true);
-		expect(await fits("some-custom-agent", 26525)).toBe(true);
+		expect(await fits("gemini", 26200)).toBe(true);
+		expect(await fits("some-custom-agent", 26190)).toBe(true);
 	});
 
 	it("the reserve is real: a task text this long is what the budget is for", () => {
