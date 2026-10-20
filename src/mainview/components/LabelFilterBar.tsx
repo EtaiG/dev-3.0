@@ -5,7 +5,8 @@ import LabelChip from "./LabelChip";
 import FilterFunnel from "./FilterFunnel";
 import HelpSpot from "./HelpSpot";
 import type { FilterFunnelGroup } from "../utils/taskFacets";
-import { isFacetTokenActive, toggleFacetToken } from "../utils/taskSearch";
+import { isFacetTokenActive, parseTaskQuery, setFacetToken, toggleFacetToken } from "../utils/taskSearch";
+import Select from "./Select";
 import { useNarrowViewport } from "../hooks/useNarrowViewport";
 import { useContainerWidth } from "../hooks/useContainerWidth";
 import { CAROUSEL_MAX_WIDTH } from "./MobileBoardCarousel";
@@ -60,6 +61,58 @@ function PriorityFilterChips({
 					</button>
 				);
 			})}
+		</div>
+	);
+}
+
+/**
+ * Single-select epic picker, a VIEW of the `epic:` token. Lists the board's
+ * open epics (the funnel's EPICS group) and renders only when there is one to
+ * pick or one is already active; the × beside it clears in one click.
+ */
+function EpicFilter({
+	query,
+	onChange,
+	filterGroups,
+}: {
+	query: string;
+	onChange: (query: string) => void;
+	filterGroups: FilterFunnelGroup[];
+}) {
+	const t = useT();
+	const epics = filterGroups.find((g) => g.id === "epics")?.options.map((o) => o.value) ?? [];
+	const typed = parseTaskQuery(query).facets.epic;
+	// A typed value keeps its own casing so the picker shows what is in the box.
+	const active = typed.length === 1
+		? epics.find((e) => e.toLowerCase() === typed[0]) ?? typed[0]
+		: null;
+	if (epics.length === 0 && typed.length === 0) return null;
+	const names = active && !epics.includes(active) ? [active, ...epics] : epics;
+
+	return (
+		<div className="flex items-center gap-0.5 flex-shrink-0" data-testid="epic-filter">
+			<div className="w-40">
+				<Select
+					size="sm"
+					ariaLabel={t("filter.epic.ariaLabel")}
+					value={active ?? ""}
+					placeholder={t("filter.group.epics")}
+					options={[{ value: "", label: t("filter.epic.all") }, ...names.map((n) => ({ value: n, label: n }))]}
+					onChange={(v) => onChange(setFacetToken(query, "epic", v || null))}
+				/>
+			</div>
+			{typed.length > 0 && (
+				<button
+					type="button"
+					aria-label={t("filter.epic.clear")}
+					title={t("filter.epic.clear")}
+					onClick={() => onChange(setFacetToken(query, "epic", null))}
+					data-testid="epic-filter-clear"
+					className="w-6 h-6 flex items-center justify-center rounded-lg text-fg-3 hover:text-fg hover:bg-elevated text-xs leading-none transition-colors"
+				>
+					×
+				</button>
+			)}
 		</div>
 	);
 }
@@ -265,6 +318,7 @@ function LabelFilterBar({
 					open={funnelOpen}
 					onOpenChange={setFunnelOpen}
 				/>
+				<EpicFilter query={searchQuery} onChange={onSearchChange} filterGroups={filterGroups} />
 			</div>
 
 			{/* Priority quick-filter — the fast, high-value filter, right after search. */}

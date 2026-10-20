@@ -7,7 +7,7 @@ import { earlierPullRequests } from "../../shared/task-pull-requests";
  *
  * The search string is the SINGLE source of truth for both free-text search
  * and structured filtering. A query mixes recognized facet tokens
- * (`label:"Bug Fix" agent:Codex status:review type:coordinator is:attention has:port`) with
+ * (`label:"Bug Fix" agent:Codex status:review type:coordinator epic:auth is:attention has:port`) with
  * ordinary free text (`login`). The same parser drives the Kanban filter bar
  * and the Active Tasks sidebar so both surfaces behave identically.
  *
@@ -22,7 +22,7 @@ import { earlierPullRequests } from "../../shared/task-pull-requests";
  */
 
 /** Ordered set of recognized facet keys. Extend here to add a facet. */
-export const FACET_KEYS = ["priority", "label", "agent", "status", "type", "space", "is", "has"] as const;
+export const FACET_KEYS = ["priority", "label", "agent", "status", "type", "epic", "space", "is", "has"] as const;
 export type FacetKey = (typeof FACET_KEYS)[number];
 
 /**
@@ -42,6 +42,8 @@ export interface TaskQueryContext {
 	statusValues: string[];
 	/** The task's type id: `standard` for an untyped task, else its `TaskType`. */
 	taskType: string;
+	/** The task's epic name, or null when it belongs to none. */
+	epic: string | null;
 	/** True when the task currently has at least one allocated port. */
 	hasPort: boolean;
 	/** True when the task needs the user's attention (see `is:attention`). */
@@ -97,6 +99,13 @@ const FACET_DEFS: Record<FacetKey, FacetDef> = {
 		kind: "free",
 		match: (ctx, v) => ctx.taskType.includes(v),
 	},
+	// Exact, not substring: epics are identifiers, and `epic:auth` must not pull
+	// in `auth-rework` when the epic picker selects one.
+	epic: {
+		key: "epic",
+		kind: "free",
+		match: (ctx, v) => ctx.epic != null && ctx.epic.toLowerCase() === v,
+	},
 	space: {
 		key: "space",
 		kind: "free",
@@ -150,7 +159,7 @@ function unescapeDslValue(inner: string): string {
 }
 
 function emptyFacets(): Record<FacetKey, string[]> {
-	return { priority: [], label: [], agent: [], status: [], type: [], space: [], is: [], has: [] };
+	return { priority: [], label: [], agent: [], status: [], type: [], epic: [], space: [], is: [], has: [] };
 }
 
 /**
@@ -347,4 +356,18 @@ export function toggleFacetToken(query: string, facet: FacetKey, value: string):
 	const trimmed = query.trim();
 	const token = facetToken(facet, value);
 	return trimmed ? `${trimmed} ${token}` : token;
+}
+
+/**
+ * Single-select a facet: drop every token of `facet`, then append `value`'s
+ * token (none when `value` is null). Returns the new query string.
+ */
+export function setFacetToken(query: string, facet: FacetKey, value: string | null): string {
+	const stripped = query
+		.replace(new RegExp(`(^|\\s)${facet}:(?:"(?:\\\\.|[^"\\\\])*"|\\S+)(?=\\s|$)`, "gi"), " ")
+		.replace(/\s+/g, " ")
+		.trim();
+	if (value === null) return stripped;
+	const token = facetToken(facet, value);
+	return stripped ? `${stripped} ${token}` : token;
 }

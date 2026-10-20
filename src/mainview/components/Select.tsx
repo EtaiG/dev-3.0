@@ -315,6 +315,7 @@ function Select({
 	customOptionLabel,
 	emptyLabel = "Nothing matches",
 	inputMode,
+	size,
 }: {
 	id?: string;
 	value: string;
@@ -344,6 +345,8 @@ function Select({
 	customOptionLabel?: (query: string) => string;
 	emptyLabel?: string;
 	inputMode?: "text" | "decimal";
+	/** `sm` matches the board filter bar's compact `text-xs` controls. */
+	size?: "sm";
 }) {
 	const [open, setOpen] = useState(false);
 	const [activeIndex, setActiveIndex] = useState(-1);
@@ -494,7 +497,7 @@ function Select({
 				aria-activedescendant={!withSearch && open && activeIndex >= 0 ? optionIdFor(activeIndex) : undefined}
 				onClick={() => (open ? setOpen(false) : openList())}
 				onKeyDown={handleKeyDown}
-				className={`w-full flex items-center justify-between gap-2 bg-elevated text-fg text-sm rounded-lg px-3 py-1.5 border transition-colors outline-none text-left ${
+				className={`w-full flex items-center justify-between gap-2 bg-elevated text-fg rounded-lg border transition-colors ${size === "sm" ? "text-xs px-2 py-1" : "text-sm px-3 py-1.5"} outline-none text-left ${
 					open ? "border-accent" : "border-edge hover:border-edge-active"
 				}`}
 			>

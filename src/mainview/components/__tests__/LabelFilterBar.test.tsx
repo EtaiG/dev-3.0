@@ -201,6 +201,39 @@ describe("LabelFilterBar — search box", () => {
 	});
 });
 
+describe("LabelFilterBar — epic picker (view of the epic: token)", () => {
+	const withEpics: FilterFunnelGroup[] = [
+		...GROUPS,
+		{ id: "epics", options: [{ facet: "epic", value: "auth-rework", label: "auth-rework" }, { facet: "epic", value: "billing", label: "billing" }] },
+	];
+
+	it("is absent when no open task has an epic", () => {
+		renderBar();
+		expect(screen.queryByTestId("epic-filter")).not.toBeInTheDocument();
+	});
+
+	it("picking an epic replaces any epic token, keeping the rest of the query", async () => {
+		const user = userEvent.setup();
+		const { onSearchChange } = renderBar({ filterGroups: withEpics, searchQuery: "login epic:billing" });
+		await user.click(screen.getByRole("combobox", { name: "Filter by epic" }));
+		await user.click(screen.getByRole("option", { name: "auth-rework" }));
+		expect(onSearchChange).toHaveBeenCalledWith("login epic:auth-rework");
+	});
+
+	it("shows the active epic and clears it in one click", async () => {
+		const user = userEvent.setup();
+		const { onSearchChange } = renderBar({ filterGroups: withEpics, searchQuery: "label:Bug epic:billing" });
+		expect(screen.getByRole("combobox", { name: "Filter by epic" })).toHaveTextContent("billing");
+		await user.click(screen.getByRole("button", { name: "Clear epic filter" }));
+		expect(onSearchChange).toHaveBeenCalledWith("label:Bug");
+	});
+
+	it("has no clear button while no epic is picked", () => {
+		renderBar({ filterGroups: withEpics });
+		expect(screen.queryByTestId("epic-filter-clear")).not.toBeInTheDocument();
+	});
+});
+
 describe("LabelFilterBar — narrow viewport", () => {
 	const originalInnerWidth = window.innerWidth;
 	const originalMatchMedia = window.matchMedia;

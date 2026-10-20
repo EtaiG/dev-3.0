@@ -7,6 +7,7 @@ import {
 	isFacetTokenActive,
 	countActiveFacetTokens,
 	facetToken,
+	setFacetToken,
 } from "../taskSearch";
 
 function makeTask(overrides: Partial<Task> = {}): Task {
@@ -52,6 +53,7 @@ function ctx(overrides: Partial<TaskQueryContext> = {}): TaskQueryContext {
 		statusValues: [],
 		priorityValue: "",
 		taskType: "standard",
+		epic: null,
 		spaceNames: [],
 		hasPort: false,
 		isHidden: false,
@@ -478,5 +480,30 @@ describe("matchesTaskQuery — type facet", () => {
 	it("counts as a facet token, not free text", () => {
 		expect(parseTaskQuery("type:coordinator login").facets.type).toEqual(["coordinator"]);
 		expect(countActiveFacetTokens("type:coordinator login")).toBe(1);
+	});
+});
+
+describe("epic: facet", () => {
+	it("matches the epic name exactly, case-insensitively", () => {
+		const task = makeTask();
+		expect(matchesTaskQuery(task, "epic:auth-rework", ctx({ epic: "auth-rework" }))).toBe(true);
+		expect(matchesTaskQuery(task, "epic:Auth-Rework", ctx({ epic: "auth-rework" }))).toBe(true);
+		expect(matchesTaskQuery(task, "epic:auth", ctx({ epic: "auth-rework" }))).toBe(false);
+		expect(matchesTaskQuery(task, "epic:auth", ctx({ epic: null }))).toBe(false);
+	});
+});
+
+describe("setFacetToken (single-select)", () => {
+	it("replaces every token of the facet and keeps the rest", () => {
+		expect(setFacetToken('login epic:a label:Bug epic:"b c"', "epic", "d")).toBe("login label:Bug epic:d");
+	});
+
+	it("clears the facet when value is null", () => {
+		expect(setFacetToken("epic:a label:Bug", "epic", null)).toBe("label:Bug");
+		expect(setFacetToken("epic:a", "epic", null)).toBe("");
+	});
+
+	it("leaves other facets that merely contain the key alone", () => {
+		expect(setFacetToken("myepic:x", "epic", null)).toBe("myepic:x");
 	});
 });

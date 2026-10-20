@@ -228,6 +228,23 @@ describe("buildFilterGroups", () => {
 		expect(matchesTaskQuery(coord, "type:standard", taskQueryContext(coord, resolverFor()))).toBe(false);
 	});
 
+	it("lists only epics that still have an open task, deduped and sorted", () => {
+		const tasks = [
+			makeTask({ id: "a", epic: "zeta" }),
+			makeTask({ id: "b", epic: "alpha", status: "completed" }),
+			makeTask({ id: "c", epic: "alpha", status: "todo" }),
+			makeTask({ id: "d", epic: "done-epic", status: "cancelled" }),
+			makeTask({ id: "e", epic: "zeta" }),
+		];
+		const epics = buildFilterGroups(tasks, resolverFor(), candidates).find((g) => g.id === "epics")!.options;
+		expect(epics.map((o) => `${o.facet}:${o.value}`)).toEqual(["epic:alpha", "epic:zeta"]);
+	});
+
+	it("drops the EPICS group when no open task has an epic", () => {
+		const tasks = [makeTask({ id: "a" }), makeTask({ id: "b", epic: "x", status: "completed" })];
+		expect(buildFilterGroups(tasks, resolverFor(), candidates).map((g) => g.id)).not.toContain("epics");
+	});
+
 	it("returns no groups for an empty task list", () => {
 		expect(buildFilterGroups([], resolverFor(), candidates)).toEqual([]);
 	});

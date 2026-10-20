@@ -12,6 +12,7 @@ const GROUP_TITLE_KEY: Record<FilterGroupId, TranslationKey> = {
 	priority: "filter.group.priority",
 	status: "filter.group.status",
 	types: "filter.group.types",
+	epics: "filter.group.epics",
 	spaces: "filter.group.spaces",
 	labels: "filter.group.labels",
 	agents: "filter.group.agents",

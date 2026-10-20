@@ -12,7 +12,7 @@ import { getTaskAgentMeta } from "./taskAgentMeta";
  */
 
 /** The funnel groups. FLAGS bundles the boolean `is:`/`has:` facets. */
-export type FilterGroupId = "priority" | "status" | "types" | "spaces" | "labels" | "agents" | "flags";
+export type FilterGroupId = "priority" | "status" | "types" | "epics" | "spaces" | "labels" | "agents" | "flags";
 
 export interface FilterFunnelOption {
 	facet: FacetKey;
@@ -88,6 +88,7 @@ export function taskQueryContext(task: Task, resolver: FacetResolver): TaskQuery
 		statusValues: resolver.statusValuesFor(task),
 		priorityValue: resolver.priorityFor(task).toLowerCase(),
 		taskType: taskTypeValue(task),
+		epic: task.epic || null,
 		hasPort: resolver.hasPortFor(task),
 		isAttention: resolver.isAttentionFor(task),
 		isHidden: task.hidden === true,
@@ -109,7 +110,8 @@ export interface FilterFunnelCandidates {
 /**
  * Build the funnel's grouped options from the visible task pool: only values
  * actually present, empty groups dropped. PRIORITY leads (it is the most
- * important quick filter), then STATUS, TYPES, SPACES, LABELS, AGENTS, FLAGS.
+ * important quick filter), then STATUS, TYPES, EPICS, SPACES, LABELS, AGENTS, FLAGS.
+ * EPICS lists only epics with at least one open (not completed/cancelled) task.
  * TYPES appears only when some task is not standard — a lone "Standard" option
  * filters nothing. Candidate
  * vocabularies (priority, status) keep their given order; LABELS/AGENTS sort
@@ -121,6 +123,7 @@ export function buildFilterGroups(
 	{ priorityCandidates, statusCandidates, flagLabels, typeLabels }: FilterFunnelCandidates,
 ): FilterFunnelGroup[] {
 	const labelByValue = new Map<string, FilterFunnelOption>();
+	const epicByValue = new Map<string, FilterFunnelOption>();
 	const spaceByValue = new Map<string, FilterFunnelOption>();
 	const agentByValue = new Map<string, FilterFunnelOption>();
 	const presentStatus = new Set<string>();
@@ -138,6 +141,10 @@ export function buildFilterGroups(
 			if (!labelByValue.has(key)) {
 				labelByValue.set(key, { facet: "label", value: label.name, label: label.name, color: label.color });
 			}
+		}
+		if (task.epic && task.status !== "completed" && task.status !== "cancelled") {
+			const key = task.epic.toLowerCase();
+			if (!epicByValue.has(key)) epicByValue.set(key, { facet: "epic", value: task.epic, label: task.epic });
 		}
 		if (resolver.spaceNamesFor) {
 			const names = resolver.spaceNamesFor(task);
@@ -176,6 +183,7 @@ export function buildFilterGroups(
 	const byLabel = (a: FilterFunnelOption, b: FilterFunnelOption) => a.label.localeCompare(b.label);
 	const labelOptions = [...labelByValue.values()].sort(byLabel);
 	const agentOptions = [...agentByValue.values()].sort(byLabel);
+	const epicOptions = [...epicByValue.values()].sort(byLabel);
 	// Real spaces alphabetically, then the computed Home group last — same order
 	// as the dashboard rail.
 	const spaceOptions = [...spaceByValue.values()].sort(byLabel);
@@ -192,6 +200,7 @@ export function buildFilterGroups(
 		{ id: "priority", options: priorityOptions },
 		{ id: "status", options: statusOptions },
 		{ id: "types", options: typeOptions },
+		{ id: "epics", options: epicOptions },
 		{ id: "spaces", options: spaceOptions },
 		{ id: "labels", options: labelOptions },
 		{ id: "agents", options: agentOptions },
