@@ -102,6 +102,8 @@ export interface Task {
 	 * runs; treat a missing value as {@link DEFAULT_PRIORITY} via {@link priorityRank}.
 	 */
 	priority?: TaskPriority;
+	/** Short kebab-case epic name; the same name in different projects is the same epic. */
+	epic?: string;
 	baseBranch: string;
 	worktreePath: string | null;
 	branchName: string | null;
